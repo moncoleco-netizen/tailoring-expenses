@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tailoring Expenses</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--ink:#2a2420;--mute:#8a7f76;--accent:#b4532a;--on:#fff;--line:#e7dfd4;--danger:#b3261e;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1815;--card:#26211d;--ink:#f1ebe4;--mute:#a1968c;--accent:#e0875a;--on:#1b1815;--line:#3a332d;--danger:#f2b8b5;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1b1815;--card:#26211d;--ink:#f1ebe4;--mute:#a1968c;--accent:#e0875a;--on:#1b1815;--line:#3a332d;--danger:#f2b8b5;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px 16px 110px}
+h1{font-size:22px;margin:4px 0 14px}
+.total{background:var(--accent);color:var(--on);border-radius:16px;padding:16px 18px;margin-bottom:14px}
+.total small{opacity:.85;display:block}.total b{font-size:32px}
+input,select,textarea,button{font:inherit;color:var(--ink)}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.search{margin-bottom:12px}
+input[readonly]{opacity:.75}
+/* Slightly narrow the Colour, Quantity and Unit entry fields */
+#col,#qty,#unit{width:calc(100% - 1cm);max-width:100%}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:4px}
+.chip{flex:none;padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:14px}
+.chip.on{background:var(--accent);color:var(--on);border-color:var(--accent)}
+.tabs{display:flex;background:var(--line);border-radius:12px;padding:3px;margin-bottom:14px}
+.tab{flex:1;padding:9px;border:0;border-radius:10px;background:none;font-weight:600}
+.tab.on{background:var(--card)}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:14px;white-space:nowrap}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--mute);font-size:12px;text-transform:uppercase}
+td.r,th.r{text-align:right}
+tr.d{cursor:pointer}
+tfoot td{font-weight:700;border-bottom:0}
+th{padding:9px 15px}
+td{padding:5px 6px}
+td input,td select{width:100%;min-width:90px;padding:6px 8px;border-radius:6px;font-size:14px}
+td input[data-f=name],td input[data-f=use],td input[data-f=supplier],td input[data-f=notes]{min-width:150px}
+td input[type=number]{min-width:84px;text-align:right}
+td input[type=date]{min-width:132px}
+/* Compact the first six columns so Amount stays visible on narrow screens */
+@media(max-width:600px){
+  #sheetView table{width:max-content;table-layout:fixed}
+  #sheetView th:nth-child(1),#sheetView td:nth-child(1){width:26px}
+  #sheetView th:nth-child(2),#sheetView td:nth-child(2){width:42px}
+  #sheetView th:nth-child(3),#sheetView td:nth-child(3){width:27px}
+  #sheetView th:nth-child(4),#sheetView td:nth-child(4){width:30px}
+  #sheetView th:nth-child(5),#sheetView td:nth-child(5){width:37px}
+  #sheetView th:nth-child(6),#sheetView td:nth-child(6){width:42px}
+  #sheetView th:nth-child(7),#sheetView td:nth-child(7){width:32px}
+  #sheetView th:nth-child(-n+7){padding:5px 1px;font-size:8px;white-space:normal;overflow-wrap:anywhere}
+  #sheetView td:nth-child(-n+7){padding:3px 1px}
+  #sheetView td input,#sheetView td select{min-width:0;width:100%;padding:3px 0;font-size:9px;border-radius:3px}
+  #sheetView td input[type=number]{min-width:0;text-align:right}
+}
+.mini{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:5px 9px;font-size:13px;margin-right:4px}
+.flt{margin-bottom:8px}
+.flt summary{cursor:pointer;font-weight:600;color:var(--accent);padding:6px 0}
+.fbar{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.fbar label{margin:8px 0 3px}
+.clr{background:none;border:0;color:var(--accent);font-weight:600;padding:10px 0}
+#cnt{margin:0 0 10px}
+.gh{display:flex;justify-content:space-between;font-weight:700;margin:16px 2px 8px;padding-bottom:4px;border-bottom:2px solid var(--accent)}
+tr.gr td{background:var(--line);font-weight:700;padding:8px 15px}
+.psh{z-index:4}
+.pprev{width:100%;max-height:240px;object-fit:contain;border-radius:12px;margin-bottom:8px;display:none;background:var(--card)}
+.pbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:16px}
+.pk{font-size:13px;color:var(--mute)}.pv{font-size:26px;font-weight:700}
+.bar2{height:8px;background:var(--line);border-radius:6px;margin:10px 0 6px;overflow:hidden}.bar2 i{display:block;height:100%;background:var(--accent)}
+h3{font-size:15px;margin:18px 0 8px}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.addp{width:100%;margin-top:14px;padding:12px;border:1px solid var(--accent);color:var(--accent);background:none;border-radius:10px;font-weight:600}
+.pc .th{width:64px;height:64px}
+.tab{font-size:15px;padding:9px 2px}
+.dc .th{width:64px;height:64px}
+.ig{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.ii{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--line)}
+.ii img{width:100%;height:100%;object-fit:cover}
+.x{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:18px;line-height:1}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;z-index:9;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.lb.on{display:flex}
+.lb img{max-width:100%;max-height:100%;object-fit:contain}
+.row{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px;cursor:pointer}
+.th{width:56px;height:56px;border-radius:10px;background:var(--line);flex:none;object-fit:cover;display:grid;place-items:center;color:var(--mute);font-size:22px}
+.row .m{flex:1;min-width:0}.row .n{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .s{font-size:13px;color:var(--mute)}.row .p{font-weight:700}
+.empty{text-align:center;color:var(--mute);padding:40px 10px}
+.fab{position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--on);font-size:32px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.sheet{position:fixed;inset:0;background:var(--bg);overflow:auto;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 24px);display:none;z-index:5}
+.sheet.on{display:block}
+.sheet .in{max-width:640px;margin:0 auto}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.bar button{background:none;border:0;color:var(--accent);font-weight:600;font-size:17px;padding:8px 0}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#prev{width:100%;max-height:260px;object-fit:contain;border-radius:12px;margin-bottom:8px;display:none;background:var(--card)}
+.btns{display:flex;gap:10px}
+.btns button{flex:1;padding:12px;border:1px solid var(--line);background:var(--card);border-radius:10px;font-weight:600}
+.del{width:100%;margin-top:22px;padding:12px;border:1px solid var(--danger);color:var(--danger);background:none;border-radius:10px;font-weight:600}
+.note{font-size:13px;color:var(--mute);margin-top:6px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.pcol{min-width:0}.pcol h3{margin:8px 0}
+.plist{display:flex;flex-direction:column;gap:8px;max-height:44vh;overflow-y:auto}
+.mr{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer}
+.mr .t{width:40px;height:40px;border-radius:8px;object-fit:cover;background:var(--line);flex:none;display:grid;place-items:center;font-size:18px}
+.mr .tx{min-width:0;flex:1}.tn{font-weight:600;font-size:13px}.ts{font-size:12px;color:var(--mute)}
+.tn,.ts{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dsvg svg{width:100%;max-width:380px;display:block;margin:10px auto;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.nb{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--accent);color:var(--on);font-size:10px;font-weight:700;margin-right:4px}
+textarea.dd{margin-top:8px}
+
+/* Laptop / desktop layout: use the wider screen for a roomy workspace */
+@media (min-width: 900px){
+  main{max-width:1500px;width:100%;padding:24px 32px 80px}
+  h1{font-size:26px;margin-bottom:18px}
+  .total{max-width:none;padding:18px 22px}
+  .tabs{max-width:760px}
+  .tab{padding:12px 16px}
+  .tw{overflow-x:auto}
+  #sheetView table{width:100%;table-layout:auto;white-space:normal;font-size:13px}
+  #sheetView th,#sheetView td{padding:8px 9px}
+  #sheetView th{font-size:11px;white-space:normal}
+  #sheetView td input,#sheetView td select{min-width:76px;padding:7px 8px;font-size:13px}
+  #sheetView td input[data-f=name],#sheetView td input[data-f=use],
+  #sheetView td input[data-f=supplier],#sheetView td input[data-f=notes]{min-width:110px}
+  #sheetView td input[type=number]{min-width:70px}
+  #sheetView td input[type=date]{min-width:125px}
+  .sheet .in{max-width:900px}
+  .psh .in{max-width:1100px}
+  .pgrid{grid-template-columns:1fr 1fr;gap:20px}
+  .plist{max-height:52vh}
+  .ig{grid-template-columns:repeat(4,1fr)}
+}
+\n</style>
+</head>
+<body>
+<main>
+  <h1>✂️ Tailoring Expenses</h1>
+  <div class="tabs"><button class="tab on" data-v="list">List</button><button class="tab" data-v="sheet">Sheet</button><button class="tab" data-v="projects">Projects</button><button class="tab" data-v="design">Design</button></div>
+  <div class="total"><small>Spent this month</small><b id="month">₹0</b><small id="all"></small></div>
+  <details class="flt" id="bk"><summary>Backup &amp; restore <span id="bkl"></span></summary>
+    <div class="btns"><button id="bkgo">☁️ Back up</button><button id="bkrs">📥 Restore</button></div>
+    <div class="note">Back up saves one file with all purchases, projects, designs and photos. In the share menu choose Google Drive, iCloud Drive, Dropbox, OneDrive, etc. Restore merges a backup file into this device.</div>
+    <input id="bkf" type="file" accept=".json,application/json" hidden>
+  </details>
+  <details class="flt" id="cloudPanel">
+    <summary>☁️ Supabase cloud sync <span id="cloudState">· Not connected</span></summary>
+    <label>Supabase project URL</label><input id="sbUrl" type="url" placeholder="https://your-project.supabase.co">
+    <label>Supabase anon / publishable key</label><input id="sbKey" autocomplete="off" placeholder="sb_publishable_… or anon key">
+    <label>Email</label><input id="sbEmail" type="email" autocomplete="username" placeholder="Your Supabase Auth email">
+    <label>Password</label><input id="sbPassword" type="password" autocomplete="current-password" placeholder="Your password">
+    <div class="btns" style="margin-top:10px"><button id="sbTest">Test connection</button><button id="sbConnect">Sign in</button><button id="sbSignup">Create account</button></div>
+    <div class="btns" style="margin-top:8px"><button id="sbSync">Sync now</button><button id="sbLogout">Sign out</button></div>
+    <div class="note" id="sbMsg">Your data stays on this device until you connect. Configure the SQL table and row-level security in Supabase before signing in.</div>
+  </details>
+  <input class="search" id="q" type="search" placeholder="Search name, supplier, category">
+  <div class="chips" id="chips"></div>
+  <details class="flt"><summary id="fsum">Sort &amp; filter</summary>
+    <div class="fbar">
+      <div><label>Sort by</label><select id="sort"><option value="new">Newest first</option><option value="old">Oldest first</option><option value="hi">Amount: high to low</option><option value="lo">Amount: low to high</option><option value="az">Name: A to Z</option><option value="cat">Category</option></select></div>
+      <div><label>Group by</label><select id="grp"><option value="none">No grouping</option><option value="project">Project</option><option value="cat">Category</option></select></div>
+      <div><label>Project</label><select id="fprj"></select></div>
+      <div><label>Supplier</label><select id="fsup"></select></div>
+      <div><label>From date</label><input id="dfrom" type="date"></div>
+      <div><label>To date</label><input id="dto" type="date"></div>
+    </div>
+    <button class="clr" id="clr">Clear all filters</button>
+  </details>
+  <div class="note" id="cnt"></div>
+  <div id="list"></div>
+  <div id="sheetView" class="tw" style="display:none"></div>
+  <div id="projView" style="display:none"></div>
+  <div id="desView" style="display:none"></div>
+</main>
+<button class="fab" id="add" aria-label="Add purchase">+</button>
+
+<div class="sheet" id="sheet"><div class="in">
+  <div class="bar"><button id="cancel">Cancel</button><b id="ttl">New Purchase</b><button id="save">Save</button></div>
+  <img id="prev" alt="Material photo">
+  <div class="btns">
+    <button id="cam">📷 Take Photo</button>
+    <button id="lib">🖼️ Library</button>
+  </div>
+  <input id="fcam" type="file" accept="image/*" capture="environment" hidden>
+  <input id="flib" type="file" accept="image/*" hidden>
+  <label>Material name</label><input id="name" placeholder="e.g. Cotton poplin">
+  <label>Category</label><select id="cat"></select>
+  <div id="colWrap"><label>Colour (optional)</label><input id="col" placeholder="e.g. Maroon"></div>
+  <div class="two">
+    <div><label>Quantity</label><input id="qty" type="number" inputmode="decimal" step="any" min="0" value="1"></div>
+    <div><label>Unit</label><select id="unit"></select></div>
+  </div>
+  <div class="two">
+    <div id="ppgWrap"><label id="ppgL">Price per unit</label><input id="ppg" type="number" inputmode="decimal" step="any" min="0"></div>
+    <div><label id="amtL">Total amount</label><input id="amt" type="number" inputmode="decimal" step="any" min="0"></div>
+  </div>
+  <label>Shop / supplier (optional)</label><input id="sup">
+  <label>Date</label><input id="date" type="date">
+  <label>Use of the item</label><input id="use" placeholder="e.g. Blouse for a customer order">
+  <label>Project (name or number)</label><input id="proj" list="projlist" placeholder="e.g. 1, or Wedding blouse"><datalist id="projlist"></datalist>
+  <label>Notes (optional)</label><textarea id="notes" rows="2" placeholder="Width, customer order…"></textarea>
+  <button class="del" id="del" style="display:none">Delete purchase</button>
+</div></div>
+
+<div class="sheet psh" id="psheet"><div class="in">
+  <div class="bar"><button id="pback">Close</button><b id="pttl">Project</b><button id="psave">Save</button></div>
+  <div id="ptop"></div>
+  <img id="pprev" class="pprev" alt="Project photo">
+  <div class="btns"><button id="pcam">📷 Take Photo</button><button id="plib">🖼️ Library</button></div>
+  <input id="pfcam" type="file" accept="image/*" capture="environment" hidden>
+  <input id="pflib" type="file" accept="image/*" hidden>
+  <label>Project name</label><input id="pname" placeholder="e.g. 1, or Wedding blouse">
+  <label>Client / customer (optional)</label><input id="pclient">
+  <div class="two">
+    <div><label>Status</label><select id="pstat"><option>Planned</option><option>In progress</option><option>Completed</option><option>On hold</option></select></div>
+    <div><label>Budget</label><input id="pbud" type="number" inputmode="decimal" step="any" min="0"></div>
+  </div>
+  <div class="two">
+    <div><label>Start date</label><input id="pstart" type="date"></div>
+    <div><label>Due date</label><input id="pdue" type="date"></div>
+  </div>
+  <label>Notes</label><textarea id="pnotes" rows="3" placeholder="Measurements, design details, instructions…"></textarea>
+  <div id="psum"></div>
+  <button class="addp" id="padd">+ Add purchase to this project</button>
+  <button class="del" id="pdel" style="display:none">Delete project</button>
+</div></div>
+
+<div class="sheet psh" id="dsheet"><div class="in">
+  <div class="bar"><button id="dback">Close</button><b id="dttl">New Design</b><button id="dsave">Save</button></div>
+  <label>Design name</label><input id="dname" placeholder="e.g. Bridal blouse back neck">
+  <label>Project (optional)</label><input id="dproj" list="projlist" placeholder="Link to a project">
+  <h3>Garment type &amp; measurements</h3>
+  <div class="two">
+    <div><label>Garment type</label><select id="dtype"><option value="">Select…</option><option value="skirt">Skirt</option><option value="top">Top / Blouse</option><option value="corset">Corset</option><option value="kurta">Kurta</option><option value="pants">Pants</option><option value="shorts">Shorts</option></select></div>
+    <div><label>Unit</label><select id="dunit"><option value="in">Inches</option><option value="cm">Centimetres</option></select></div>
+  </div>
+  <div id="dsvg"></div>
+  <div class="mgrid" id="dmin"></div>
+  <h3>1. Design images</h3>
+  <div class="ig" id="ig-design"></div>
+  <div class="btns"><button data-add="design" data-m="cam">📷 Camera</button><button data-add="design" data-m="lib">🖼️ Add photos</button></div>
+  <textarea class="dd" id="dd-design" rows="2" placeholder="Describe these design images…"></textarea>
+  <h3>2. Description of the pattern</h3>
+  <textarea id="ddesc" rows="4" placeholder="Style, neckline, sleeves, fit, measurements…"></textarea>
+  <h3>3. Cutting pattern images</h3>
+  <div class="ig" id="ig-cut"></div>
+  <div class="btns"><button data-add="cut" data-m="cam">📷 Camera</button><button data-add="cut" data-m="lib">🖼️ Add photos</button></div>
+  <textarea class="dd" id="dd-cut" rows="2" placeholder="Describe the cutting pattern images…"></textarea>
+  <h3>4. Work design images</h3>
+  <div class="ig" id="ig-work"></div>
+  <div class="btns"><button data-add="work" data-m="cam">📷 Camera</button><button data-add="work" data-m="lib">🖼️ Add photos</button></div>
+  <textarea class="dd" id="dd-work" rows="2" placeholder="Describe the work design (embroidery, stitching…)…"></textarea>
+  <h3>5. Border designs (if any)</h3>
+  <div class="ig" id="ig-border"></div>
+  <div class="btns"><button data-add="border" data-m="cam">📷 Camera</button><button data-add="border" data-m="lib">🖼️ Add photos</button></div>
+  <textarea class="dd" id="dd-border" rows="2" placeholder="Describe the border designs…"></textarea>
+  <h3>6. Zips and accessories</h3>
+  <textarea id="dacc" rows="3" placeholder="Zip length and colour, hooks, buttons, lining…"></textarea>
+  <div class="ig" id="ig-acc" style="margin-top:8px"></div>
+  <div class="btns"><button data-add="acc" data-m="cam">📷 Camera</button><button data-add="acc" data-m="lib">🖼️ Add photos</button></div>
+  <button class="del" id="ddel" style="display:none">Delete design</button>
+</div></div>
+<input id="dfcam" type="file" accept="image/*" capture="environment" hidden>
+<input id="dflib" type="file" accept="image/*" multiple hidden>
+<div class="lb" id="lb"><img alt=""></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const CATS=["Fabric","Beads","Lace & Trims","Thread","Buttons","Zips","Lining & Interfacing","Elastic","Tools & Needles","Packaging","Other"];
+const UNITS=["metres","yards","pieces","spools","packs","grams"];
+const fmt=new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2});
+const $=s=>document.querySelector(s);
+const SORTS={new:(a,b)=>b.date.localeCompare(a.date)||b.id-a.id,old:(a,b)=>a.date.localeCompare(b.date)||a.id-b.id,hi:(a,b)=>b.amount-a.amount,lo:(a,b)=>a.amount-b.amount,az:(a,b)=>a.name.localeCompare(b.name),cat:(a,b)=>CATS.indexOf(a.category)-CATS.indexOf(b.category)||b.date.localeCompare(a.date)};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let db=null,items=[],cur=null,photo=null,last="ppg",fc="All",view="list",projects=[],pcur=null,pphoto=null,designs=[],dcur=null,dTarget=null,dDirty=false;
+
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("tailorspend",3);
+  r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("expenses"))d.createObjectStore("expenses",{keyPath:"id"});if(!d.objectStoreNames.contains("projects"))d.createObjectStore("projects",{keyPath:"id"});if(!d.objectStoreNames.contains("designs"))d.createObjectStore("designs",{keyPath:"id"});};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function run(mode,fn,st="expenses"){return new Promise((res,rej)=>{const t=db.transaction(st,mode),changes=[];
+  const raw=t.objectStore(st),store=new Proxy(raw,{get(target,prop){if(prop==="put")return (value,...args)=>{changes.push({op:"put",value});return target.put(value,...args);};if(prop==="delete")return (key)=>{changes.push({op:"delete",key});return target.delete(key);};const v=target[prop];return typeof v==="function"?v.bind(target):v;}});
+  const req=fn(store);t.oncomplete=()=>{if(mode==="readwrite"&&changes.length)changes.forEach(c=>cloudMutation(st,c));res(req&&req.result);};t.onerror=()=>rej(t.error);});}
+async function persist(fn){ if(!db) return; try{await fn();}catch(e){alert("Could not save to this browser’s storage.");} }
+
+// Supabase cloud sync. Local IndexedDB remains the offline-first cache.
+let sb=null,sbUser=null,cloudBusy=false;
+const STORES=["expenses","projects","designs"];
+const cloudMsg=(m)=>{const el=$("#sbMsg");if(el)el.textContent=m;};
+function cloudState(){ $("#cloudState").textContent=sbUser?"· Signed in as "+sbUser.email:"· Not connected"; }
+function setupSupabase(){
+  const url=$("#sbUrl").value.trim(),key=$("#sbKey").value.trim();
+  if(!url||!key||!window.supabase){cloudMsg("Enter your Supabase URL and anon/publishable key. Check your internet connection.");return false;}
+  try{localStorage.setItem("tailorspend_sb_url",url);localStorage.setItem("tailorspend_sb_key",key);sb=window.supabase.createClient(url,key);return true;}
+  catch(e){cloudMsg("Could not initialise Supabase: "+e.message);return false;}
+}
+async function cloudMutation(store,change){
+  if(!sb||!sbUser||cloudBusy)return;
+  const rid=String(change.op==="put"?change.value.id:change.key);
+  try{
+    if(change.op==="put"){
+      const {error}=await sb.from("tailoring_records").upsert({user_id:sbUser.id,store,record_id:rid,data:change.value},{onConflict:"user_id,store,record_id"});
+      if(error)throw error;
+    }else{
+      const {error}=await sb.from("tailoring_records").delete().eq("user_id",sbUser.id).eq("store",store).eq("record_id",rid);
+      if(error)throw error;
+    }
+    cloudMsg("Cloud sync active · latest change saved.");
+  }catch(e){cloudMsg("Saved on this device; cloud sync failed: "+e.message);}
+}
+async function syncCloud(){
+  if(!sb||!sbUser){cloudMsg("Sign in to a Supabase account first.");return;}
+  cloudBusy=true;cloudMsg("Syncing purchases, projects and designs…");
+  try{
+    const {data,error}=await sb.from("tailoring_records").select("store,record_id,data").eq("user_id",sbUser.id);
+    if(error)throw error;
+    const remote=new Set();
+    for(const row of data||[]){if(!STORES.includes(row.store)||!row.data)continue;remote.add(row.store+":"+row.record_id);await run("readwrite",s=>s.put(row.data),row.store);}
+    for(const store of STORES){const local=await run("readonly",s=>s.getAll(),store)||[];for(const rec of local){if(!remote.has(store+":"+String(rec.id))){const {error:e}=await sb.from("tailoring_records").upsert({user_id:sbUser.id,store,record_id:String(rec.id),data:rec},{onConflict:"user_id,store,record_id"});if(e)throw e;}}}
+    cloudMsg("Sync complete · your data is available across signed-in devices.");render();
+  }catch(e){cloudMsg("Sync failed: "+e.message+". Check the Supabase table and RLS policies.");}
+  finally{cloudBusy=false;}
+}
+async function testSupabaseConnection(){
+  const url=($('#sbUrl').value||'').trim().replace(/\/$/,''),key=($('#sbKey').value||'').trim();
+  if(!url||!key){cloudMsg('Enter the project URL and publishable key first.');return;}
+  cloudMsg('Testing connection to Supabase…');
+  try{
+    const response=await fetch(url+'/auth/v1/health',{method:'GET',headers:{apikey:key},cache:'no-store'});
+    const body=await response.text();
+    if(response.ok){cloudMsg('Connection successful (HTTP '+response.status+'). Supabase is reachable from this browser. Now try Create account again.');}
+    else if(response.status===401||response.status===403){cloudMsg('Supabase server reached (HTTP '+response.status+'), but the publishable key was rejected. Re-copy the publishable key from Project Settings → API Keys.');}
+    else{cloudMsg('Supabase server reached, but returned HTTP '+response.status+'. '+body.slice(0,180));}
+  }catch(e){
+    cloudMsg('Safari could not reach Supabase ('+(e.name||'network error')+': '+(e.message||'Load failed')+'). Check Safari content blockers/VPN/iCloud Private Relay, then try another network or Chrome.');
+  }
+}
+$('#sbTest').onclick=testSupabaseConnection;
+
+async function sbAuth(kind){
+  if(!setupSupabase())return;
+  const email=$("#sbEmail").value.trim(),password=$("#sbPassword").value;
+  if(!email||!password){cloudMsg("Enter your email and password.");return;}
+  cloudMsg(kind==="signup"?"Creating account…":"Signing in…");
+  try{
+    const result=kind==="signup"?await sb.auth.signUp({email,password}):await sb.auth.signInWithPassword({email,password});
+    if(result.error)throw result.error;
+    sbUser=result.data.user;
+    if(!sbUser){cloudMsg("Check your email to confirm your account, then sign in.");return;}
+    cloudState();await syncCloud();
+  }catch(e){cloudMsg(e instanceof TypeError?"Network request failed before Supabase could respond. Tap Test connection. If that also fails, temporarily disable Safari content blockers/VPN/iCloud Private Relay for this page or try Chrome.":"Authentication failed: "+e.message);}
+}
+
+
+function render(){
+  const q=$("#q").value.trim().toLowerCase(), now=new Date();
+  const sups=[...new Set(items.map(e=>e.supplier).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  const fs=$("#fsup"),cv=fs.value;
+  fs.innerHTML='<option value="">All suppliers</option>'+sups.map(s=>`<option>${esc(s)}</option>`).join("");
+  fs.value=sups.includes(cv)?cv:"";
+  const prjs=[...new Set([...items.map(e=>e.project),...projects.map(p=>p.name)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  const fp=$("#fprj"),pv=fp.value;
+  fp.innerHTML='<option value="">All projects</option>'+prjs.map(s=>`<option>${esc(s)}</option>`).join("");
+  fp.value=prjs.includes(pv)?pv:"";
+  $("#projlist").innerHTML=prjs.map(s=>`<option value="${esc(s)}">`).join("");
+  const sup=fs.value,prj=fp.value,from=$("#dfrom").value,to=$("#dto").value;
+  const list=items.filter(e=>(fc==="All"||e.category===fc)&&(!sup||e.supplier===sup)&&(!prj||e.project===prj)&&(!from||e.date>=from)&&(!to||e.date<=to)&&(!q||[e.name,e.supplier,e.category,e.color,e.use,e.project].some(v=>(v||"").toLowerCase().includes(q))))
+    .sort(SORTS[$("#sort").value]||SORTS.new);
+  const m=items.filter(e=>{const d=new Date(e.date+"T00:00");return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();})
+    .reduce((s,e)=>s+e.amount,0);
+  const cs=$("#chips").scrollLeft;
+  $("#chips").innerHTML=["All",...CATS].map(c=>`<button class="chip${c===fc?" on":""}" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+  $("#chips").scrollLeft=cs;
+  $("#month").textContent=fmt.format(m);
+  $("#all").textContent=items.length?`All time: ${fmt.format(items.reduce((s,e)=>s+e.amount,0))} · ${items.length} purchases`:"";
+  $("#list").innerHTML=list.length?groupize(list).map(G=>gHead(G)+G.items.map(e=>`<div class="row" data-id="${e.id}">
+    ${e.photo?`<img class="th" src="${e.photo}" alt="">`:`<div class="th">🧵</div>`}
+    <div class="m"><div class="n">${esc(e.name)}</div>
+    <div class="s">${esc(e.category)}${e.color?" ("+esc(e.color)+")":""} · ${new Date(e.date+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}${e.supplier?" · "+esc(e.supplier):""}</div>${e.use?`<div class="s">Use: ${esc(e.use)}</div>`:""}</div>
+    <div class="p">${fmt.format(e.amount)}</div></div>`).join("")).join("")
+    :`<div class="empty">${items.length?"No matches.":"No purchases yet. Tap + to add your first material."}</div>`;
+  $("#cnt").textContent=items.length?`Showing ${list.length} of ${items.length} · ${fmt.format(list.reduce((s,e)=>s+e.amount,0))}`:"";
+  const n=(sup?1:0)+(prj?1:0)+(from||to?1:0)+($("#sort").value!=="new"?1:0)+($("#grp").value!=="none"?1:0);
+  $("#fsum").textContent="Sort & filter"+(n?` (${n} on)`:"");
+  const sheetList=[...list].sort((a,b)=>CATS.indexOf(a.category)-CATS.indexOf(b.category)||b.date.localeCompare(a.date)||b.id-a.id);
+  renderSheet(sheetList);renderProjects();renderDesigns();applyView();refreshP();
+}
+
+function renderSheet(list){
+  const sl=$("#sheetView").scrollLeft,tot=list.reduce((s,e)=>s+e.amount,0),num='step="any" min="0" inputmode="decimal"';
+  const inp=(f,t,v,x="")=>`<td><input data-f="${f}" type="${t}" value="${esc(v)}" ${x}></td>`;
+  const sel=(f,opts,v)=>`<td><select data-f="${f}">${opts.map(o=>`<option${o===v?" selected":""}>${esc(o)}</option>`).join("")}</select></td>`;
+  const head=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 8px"><b>Purchase spreadsheet</b><button class="mini" data-a="new">+ Add purchase row</button></div>`;
+  const table=list.length?`<table><thead><tr><th>Material</th><th>Category</th><th class="r">Qty</th><th>Unit</th><th class="r">Per unit</th><th class="r">Amount</th><th>Colour</th><th>Supplier</th><th>Date</th><th>Use</th><th>Project</th><th>Notes</th><th></th></tr></thead><tbody>${groupize(list).map(G=>gRow(G)+G.items.map(e=>`<tr class="d" data-id="${e.id}">${inp("name","text",e.name)}${sel("category",CATS,e.category)}${inp("quantity","number",e.quantity,num)}${sel("unit",UNITS,e.unit)}${inp("ppu","number",e.quantity>0?+(e.amount/e.quantity).toFixed(4):0,num)}${inp("amount","number",e.amount,num)}${inp("color","text",e.color||"")}${inp("supplier","text",e.supplier||"")}${inp("date","date",e.date)}${inp("use","text",e.use||"")}${inp("project","text",e.project||"",'list="projlist"')}${inp("notes","text",e.notes||"")}<td><button class="mini" data-a="del">✕</button></td></tr>`).join("")).join("")}</tbody><tfoot><tr><td colspan="5">Total (${list.length})</td><td class="r tt">${fmt.format(tot)}</td><td colspan="7"></td></tr></tfoot></table>`:`<div class="empty">No purchases yet. Use “Add purchase row” to enter your first purchase.</div>`;
+  $("#sheetView").innerHTML=head+table;
+  $("#sheetView").scrollLeft=sl;
+}
+const fd=d=>new Date(d+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"});
+const projNames=()=>[...new Set([...projects.map(p=>p.name),...items.map(e=>e.project)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+const pStats=n=>{const it=items.filter(e=>e.project===n);return{it,spent:it.reduce((s,e)=>s+e.amount,0)};};
+function renderProjects(){
+  const q=$("#q").value.trim().toLowerCase(),all=projNames();
+  const names=all.filter(n=>{const r=projects.find(p=>p.name===n)||{};return !q||[n,r.client,r.notes,r.status].some(v=>(v||"").toLowerCase().includes(q));});
+  $("#projView").innerHTML=names.length?names.map(n=>{
+    const r=projects.find(p=>p.name===n)||{},{it,spent}=pStats(n),bud=+r.budget||0,ph=r.photo||(it.find(e=>e.photo)||{}).photo;
+    return `<div class="row pc" data-n="${esc(n)}">${ph?`<img class="th" src="${ph}" alt="">`:`<div class="th">📁</div>`}
+      <div class="m"><div class="n">${esc(n)}</div>
+      <div class="s">${esc(r.status||"Planned")}${r.client?" · "+esc(r.client):""}${r.due?" · Due "+fd(r.due):""}</div>
+      <div class="s">${it.length} item${it.length===1?"":"s"}${bud?` · ${Math.round(spent/bud*100)}% of budget`:""}</div></div>
+      <div class="p">${fmt.format(spent)}</div></div>`;}).join("")
+    :`<div class="empty">${all.length?"No matches.":"No projects yet. Tap + to create one."}</div>`;
+}
+function showP(){const p=$("#pprev");if(pphoto){p.src=pphoto;p.style.display="block";}else{p.removeAttribute("src");p.style.display="none";}}
+function openProj(n){
+  const r=n?projects.find(p=>p.name===n)||null:null;
+  pcur={name:n||"",rec:r};pphoto=r?r.photo||null:null;
+  $("#pttl").textContent=n?"Project":"New Project";
+  $("#pname").value=n||"";$("#pclient").value=r&&r.client||"";$("#pstat").value=r&&r.status||"Planned";
+  $("#pbud").value=r&&r.budget||"";$("#pstart").value=r&&r.start||"";$("#pdue").value=r&&r.due||"";$("#pnotes").value=r&&r.notes||"";
+  $("#pdel").style.display=$("#padd").style.display=n?"block":"none";
+  showP();$("#psheet").classList.add("on");$("#psheet").scrollTop=0;refreshP();
+}
+function refreshP(){
+  if(!$("#psheet").classList.contains("on"))return;
+  const n=pcur.name;
+  if(!n){$("#psum").innerHTML="";$("#ptop").innerHTML="";return;}
+  const {it,spent}=pStats(n),bud=+$("#pbud").value||0,by={},ds=designs.filter(d=>d.project===n);
+  it.forEach(e=>by[e.category]=(by[e.category]||0)+e.amount);
+  const cats=Object.keys(by).sort((a,b)=>by[b]-by[a]);
+  const th=(s,ic)=>s?`<img class="t" src="${s}" alt="">`:`<div class="t">${ic}</div>`;
+  const mats=it.sort(SORTS.new).map(e=>`<div class="mr mrow" data-id="${e.id}">${th(e.photo,"🧵")}<div class="tx"><div class="tn">${esc(e.name)}</div><div class="ts">${fmt.format(e.amount)}${e.color?" · "+esc(e.color):""}</div></div></div>`).join("");
+  const dess=ds.map(d=>`<div class="mr drow" data-id="${d.id}">${th(d.imgs&&d.imgs.design&&d.imgs.design[0],"🎨")}<div class="tx"><div class="tn">${esc(d.name)}</div><div class="ts">${d.gtype&&GARMENTS[d.gtype]?esc(GARMENTS[d.gtype].name):"Design"}</div></div></div>`).join("");
+  $("#ptop").innerHTML=`<div class="pgrid"><div class="pcol"><h3>Materials (${it.length})</h3><div class="plist">${mats||`<div class="note">None yet</div>`}</div></div><div class="pcol"><h3>Designs (${ds.length})</h3><div class="plist">${dess||`<div class="note">None yet</div>`}</div></div></div>`;
+  $("#psum").innerHTML=`<div class="pbox"><div class="pk">Total spent</div><div class="pv">${fmt.format(spent)}</div>${bud?`<div class="bar2"><i style="width:${Math.min(100,spent/bud*100)}%"></i></div><div class="note">${spent<=bud?fmt.format(bud-spent)+" left of "+fmt.format(bud):fmt.format(spent-bud)+" over the budget of "+fmt.format(bud)}</div>`:""}</div>
+  ${cats.length?`<h3>Spend by category</h3>${cats.map(c=>`<div class="kv"><span>${esc(c)}</span><b>${fmt.format(by[c])}</b></div>`).join("")}`:""}`;
+}
+function loadImg(file,cb,w=800){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{const img=new Image();img.onload=()=>{const s=Math.min(1,w/img.width),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);cb(c.toDataURL("image/jpeg",.7));};img.src=r.result;};
+  r.readAsDataURL(file);
+}
+async function saveP(){
+  const name=$("#pname").value.trim(),old=pcur.name;
+  if(!name){alert("Please enter a project name.");return;}
+  if(name!==old&&projects.some(p=>p.name===name)){alert("A project with this name already exists.");return;}
+  const rec={id:pcur.rec?pcur.rec.id:Date.now(),name,photo:pphoto,client:$("#pclient").value.trim(),status:$("#pstat").value,budget:+$("#pbud").value||0,start:$("#pstart").value,due:$("#pdue").value,notes:$("#pnotes").value.trim()};
+  const i=projects.findIndex(p=>p.id===rec.id);
+  if(i>=0)projects[i]=rec;else projects.push(rec);
+  await persist(()=>run("readwrite",s=>s.put(rec),"projects"));
+  if(old&&name!==old){
+    const ch=items.filter(e=>e.project===old);
+    ch.forEach(e=>e.project=name);
+    await persist(async()=>{for(const e of ch)await run("readwrite",s=>s.put(e));});
+  }
+  $("#psheet").classList.remove("on");render();
+}
+async function delP(){
+  if(!pcur.name||!confirm("Delete this project? Its purchases stay, but they won’t be linked to a project."))return;
+  const n=pcur.name,rec=pcur.rec,ch=items.filter(e=>e.project===n);
+  ch.forEach(e=>e.project="");
+  projects=projects.filter(p=>p.name!==n);
+  await persist(async()=>{if(rec)await run("readwrite",s=>s.delete(rec.id),"projects");for(const e of ch)await run("readwrite",s=>s.put(e));});
+  $("#psheet").classList.remove("on");render();
+}
+const GARMENTS={
+skirt:{name:"Skirt",outline:"M105 50 L195 50 L245 290 L55 290 Z",m:[["waist","Waist",[105,50,195,50]],["hip","Hip",[94,105,206,105]],["hipdepth","Waist to hip",[75,50,75,105]],["length","Skirt length",[262,50,262,290]],["hem","Hem sweep",[55,305,245,305]]]},
+top:{name:"Top / Blouse",outline:"M110 40 L190 40 L240 70 L225 105 L205 95 L205 270 L95 270 L95 95 L75 105 L60 70 Z",extra:"M130 40 Q150 95 170 40",m:[["shoulder","Shoulder",[110,28,190,28]],["bust","Bust",[95,125,205,125]],["waist","Waist",[95,190,205,190]],["hip","Hip",[95,240,205,240]],["armhole","Armhole depth",[105,40,105,100]],["neck","Front neck depth",[150,40,150,67]],["length","Top length",[50,40,50,270]],["sleeve","Sleeve length",[196,52,236,88]],["sround","Sleeve round",[240,70,225,105]]]},
+corset:{name:"Corset",outline:"M95 55 Q150 40 205 55 L200 110 Q188 150 192 190 L206 240 L94 240 L108 190 Q112 150 100 110 Z",m:[["bust","Bust",[95,66,205,66]],["apex","Bust point distance",[125,85,175,85]],["under","Underbust",[100,115,200,115]],["waist","Waist",[105,160,195,160]],["hip","Hip (lower edge)",[97,228,203,228]],["length","Corset length",[70,52,70,240]]]},
+kurta:{name:"Kurta",outline:"M105 40 L195 40 L245 65 L235 150 L212 145 L212 175 L232 300 L68 300 L88 175 L88 145 L65 150 L55 65 Z",extra:"M130 40 Q150 100 170 40",m:[["shoulder","Shoulder",[105,28,195,28]],["bust","Bust",[88,135,212,135]],["waist","Waist",[89,172,211,172]],["hip","Hip",[80,225,220,225]],["armhole","Armhole depth",[100,40,100,145]],["neck","Front neck depth",[150,40,150,70]],["sleeve","Sleeve length",[212,55,230,140]],["sround","Sleeve round",[212,146,235,150]],["length","Kurta length",[40,40,40,300]],["slit","Slit height",[258,235,258,300]]]},
+pants:{name:"Pants",outline:"M100 40 L200 40 L208 100 L204 310 L156 310 L150 140 L144 310 L96 310 L92 100 Z",m:[["waist","Waist",[100,30,200,30]],["hip","Hip",[92,100,208,100]],["rise","Rise",[120,40,120,140]],["inseam","Inseam",[137,140,137,310]],["outseam","Outseam",[225,40,225,310]],["thigh","Thigh",[151,155,207,155]],["knee","Knee",[153,235,205,235]],["bottom","Bottom opening",[156,324,204,324]]]},
+shorts:{name:"Shorts",outline:"M100 40 L200 40 L208 100 L206 190 L156 190 L150 140 L144 190 L94 190 L92 100 Z",m:[["waist","Waist",[100,30,200,30]],["hip","Hip",[92,100,208,100]],["rise","Rise",[120,40,120,140]],["inseam","Inseam",[137,140,137,190]],["outseam","Outseam",[225,40,225,190]],["thigh","Thigh",[151,158,206,158]],["legopen","Leg opening",[156,206,206,206]]]}
+};
+const DKEYS=["design","cut","work","border"];
+function gSVG(t,meas,unit){
+  const g=GARMENTS[t];
+  let s=`<svg viewBox="0 0 320 340" role="img" aria-label="${g.name} measurement diagram"><path d="${g.outline}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>`;
+  if(g.extra)s+=`<path d="${g.extra}" fill="none" stroke="var(--mute)" stroke-width="1.5"/>`;
+  g.m.forEach(([k,l,[x1,y1,x2,y2]],i)=>{
+    const v=meas[k],has=v!==undefined&&v!==""&&+v>0,mx=(x1+x2)/2,my=(y1+y2)/2;
+    const tick=y1===y2?`M${x1} ${y1-5}v10M${x2} ${y2-5}v10`:x1===x2?`M${x1-5} ${y1}h10M${x2-5} ${y2}h10`:"";
+    s+=`<g opacity="${has?1:.55}"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--accent)" stroke-width="2"${has?"":' stroke-dasharray="4 3"'}/><path d="${tick}" stroke="var(--accent)" stroke-width="2" fill="none"/><circle cx="${mx}" cy="${my}" r="9" fill="var(--accent)"/><text x="${mx}" y="${my+4}" font-size="11" font-weight="700" text-anchor="middle" fill="var(--on)">${i+1}</text>`;
+    if(has)s+=`<text x="${mx+13}" y="${my+4}" font-size="12" font-weight="700" fill="var(--ink)" style="paint-order:stroke;stroke:var(--card);stroke-width:3px">${+v} ${unit}</text>`;
+    s+=`</g>`;
+  });
+  return s+`</svg>`;
+}
+function drawDiagram(){
+  const t=$("#dtype").value;
+  $("#dsvg").innerHTML=t?gSVG(t,dcur.meas,$("#dunit").value):`<div class="note">Select a garment type to see its measurement diagram.</div>`;
+}
+function renderMeas(){
+  const t=$("#dtype").value,u=$("#dunit").value;
+  $("#dmin").innerHTML=t?GARMENTS[t].m.map(([k,l],i)=>`<div><label><span class="nb">${i+1}</span>${esc(l)} (${u})</label><input type="number" inputmode="decimal" step="any" min="0" data-mk="${k}" value="${esc(dcur.meas[k]!==undefined?dcur.meas[k]:"")}"></div>`).join(""):"";
+  drawDiagram();
+}
+const KEYS=["design","cut","work","border","acc"];
+function renderDesigns(){
+  const q=$("#q").value.trim().toLowerCase();
+  const ds=designs.filter(d=>!q||[d.name,d.project,d.desc,d.acc,d.gtype&&GARMENTS[d.gtype]?GARMENTS[d.gtype].name:"",...Object.values(d.descs||{})].some(v=>(v||"").toLowerCase().includes(q))).sort((a,b)=>b.id-a.id);
+  const cnt=d=>KEYS.reduce((s,k)=>s+((d.imgs&&d.imgs[k])||[]).length,0);
+  $("#desView").innerHTML=ds.length?ds.map(d=>{const n=cnt(d),t=d.imgs&&d.imgs.design&&d.imgs.design[0];
+    return `<div class="row dc" data-id="${d.id}">${t?`<img class="th" src="${t}" alt="">`:`<div class="th">🎨</div>`}<div class="m"><div class="n">${esc(d.name)}</div><div class="s">${d.gtype&&GARMENTS[d.gtype]?esc(GARMENTS[d.gtype].name)+" · ":""}${d.project?"Project: "+esc(d.project):"No project linked"}</div><div class="s">${n} image${n===1?"":"s"}${d.desc?" · "+esc(d.desc.slice(0,40))+(d.desc.length>40?"…":""):""}</div></div></div>`;}).join("")
+    :`<div class="empty">${designs.length?"No matches.":"No designs yet. Tap + to add your first design."}</div>`;
+}
+function renderGrid(k){
+  $("#ig-"+k).innerHTML=dcur.imgs[k].map((s,i)=>`<div class="ii"><img src="${s}" alt=""><button class="x" data-k="${k}" data-i="${i}" aria-label="Remove image">×</button></div>`).join("");
+}
+function openDes(id){
+  const d=id?designs.find(x=>x.id===id):null;
+  dcur=d?JSON.parse(JSON.stringify(d)):{id:Date.now(),name:"",project:"",desc:"",acc:"",imgs:{},gtype:"",munit:"in",meas:{},descs:{}};
+  dcur.imgs=dcur.imgs||{};KEYS.forEach(k=>dcur.imgs[k]=dcur.imgs[k]||[]);
+  dDirty=false;
+  $("#dttl").textContent=d?"Design":"New Design";
+  $("#dname").value=dcur.name;$("#dproj").value=dcur.project||"";$("#ddesc").value=dcur.desc||"";$("#dacc").value=dcur.acc||"";
+  KEYS.forEach(k=>renderGrid(k));
+  dcur.meas=dcur.meas||{};dcur.descs=dcur.descs||{};
+  $("#dtype").value=dcur.gtype||"";$("#dunit").value=dcur.munit||"in";
+  DKEYS.forEach(k=>$("#dd-"+k).value=dcur.descs[k]||"");
+  renderMeas();
+  $("#ddel").style.display=d?"block":"none";
+  $("#dsheet").classList.add("on");$("#dsheet").scrollTop=0;
+}
+async function saveD(){
+  const name=$("#dname").value.trim();
+  if(!name){alert("Please enter a design name.");return;}
+  dcur.name=name;dcur.project=$("#dproj").value.trim();dcur.desc=$("#ddesc").value.trim();dcur.acc=$("#dacc").value.trim();
+  dcur.gtype=$("#dtype").value;dcur.munit=$("#dunit").value;
+  dcur.descs={};DKEYS.forEach(k=>dcur.descs[k]=$("#dd-"+k).value.trim());
+  const i=designs.findIndex(x=>x.id===dcur.id);
+  if(i>=0)designs[i]=dcur;else designs.push(dcur);
+  await persist(()=>run("readwrite",s=>s.put(dcur),"designs"));
+  $("#dsheet").classList.remove("on");render();
+}
+async function delD(){
+  if(!confirm("Delete this design and all its images?"))return;
+  designs=designs.filter(x=>x.id!==dcur.id);
+  await persist(()=>run("readwrite",s=>s.delete(dcur.id),"designs"));
+  $("#dsheet").classList.remove("on");render();
+}
+function groupize(list){
+  const g=$("#grp").value;if(g==="none")return [{k:null,items:list}];
+  const m=new Map();
+  list.forEach(e=>{const k=g==="project"?(e.project||""):e.category;if(!m.has(k))m.set(k,[]);m.get(k).push(e);});
+  const ks=[...m.keys()].sort((a,b)=>g==="project"?(!a?1:!b?-1:a.localeCompare(b,undefined,{numeric:true})):CATS.indexOf(a)-CATS.indexOf(b));
+  return ks.map(k=>({k:k||"No project",items:m.get(k)}));
+}
+const gSum=G=>G.items.reduce((s,e)=>s+e.amount,0);
+const gHead=G=>G.k===null?"":`<div class="gh"><span>${esc(G.k)}</span><span>${fmt.format(gSum(G))} · ${G.items.length}</span></div>`;
+const gRow=G=>G.k===null?"":`<tr class="gr" data-k="${esc(G.k)}" data-ids="${G.items.map(e=>e.id).join(",")}"><td colspan="13">${esc(G.k)} — ${fmt.format(gSum(G))} · ${G.items.length}</td></tr>`;
+function updTotals(){
+  const now=new Date(),m=items.filter(e=>{const d=new Date(e.date+"T00:00");return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).reduce((s,e)=>s+e.amount,0);
+  $("#month").textContent=fmt.format(m);
+  $("#all").textContent=items.length?`All time: ${fmt.format(items.reduce((s,e)=>s+e.amount,0))} · ${items.length} purchases`:"";
+  const ids=[...document.querySelectorAll("#sheetView tr.d")].map(r=>+r.dataset.id),t=$("#sheetView .tt");
+  const sum=items.filter(i=>ids.includes(i.id)).reduce((s,i)=>s+i.amount,0);
+  if(t)t.textContent=fmt.format(sum);
+  document.querySelectorAll("#sheetView tr.gr").forEach(r=>{const gi=r.dataset.ids.split(",").map(Number),s=items.filter(i=>gi.includes(i.id)).reduce((a,i)=>a+i.amount,0);r.firstChild.textContent=`${r.dataset.k} — ${fmt.format(s)} · ${gi.length}`;});
+  $("#cnt").textContent=`Showing ${ids.length} of ${items.length} · ${fmt.format(sum)}`;
+}
+function applyView(){
+  $("#list").style.display=view==="list"?"block":"none";
+  $("#sheetView").style.display=view==="sheet"?"block":"none";
+  $("#projView").style.display=view==="projects"?"block":"none";
+  $("#desView").style.display=view==="design"?"block":"none";
+  ["#chips",".flt","#cnt"].forEach(s=>$(s).style.display=view==="projects"||view==="design"?"none":"");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.dataset.v===view));
+}
+function beadsUI(){$("#ppgL").textContent="Price per "+$("#unit").value.replace(/s$/,"");}
+function calcBeads(){const q=+$("#qty").value||0;
+  if(last==="amt"){const a=+$("#amt").value||0;$("#ppg").value=a&&q?+(a/q).toFixed(4):"";}
+  else{const t=(+$("#ppg").value||0)*q;$("#amt").value=t?+t.toFixed(2):"";}}
+function ppu(){beadsUI();}
+
+function showPhoto(){const p=$("#prev");if(photo){p.src=photo;p.style.display="block";}else{p.removeAttribute("src");p.style.display="none";}}
+
+function openForm(e,pre){
+  cur=e||null;photo=e?e.photo||null:null;
+  $("#ttl").textContent=e?"Edit Purchase":"New Purchase";
+  $("#name").value=e?e.name:"";$("#cat").value=e?e.category:CATS[0];
+  $("#amt").value=e?e.amount:"";$("#qty").value=e?e.quantity:1;$("#unit").value=e?e.unit:UNITS[0];
+  $("#date").value=e?e.date:new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  $("#sup").value=e?e.supplier:"";$("#notes").value=e?e.notes:"";
+  $("#del").style.display=e?"block":"none";
+  $("#col").value=e&&e.color||"";$("#use").value=e&&e.use||"";$("#proj").value=e&&e.project||(pre&&pre.project)||"";last="ppg";$("#ppg").value=e&&e.quantity?+(e.amount/e.quantity).toFixed(4):"";beadsUI();showPhoto();ppu();$("#sheet").classList.add("on");$("#sheet").scrollTop=0;
+}
+const closeForm=()=>$("#sheet").classList.remove("on");
+
+function loadPhoto(file){
+  if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{const img=new Image();img.onload=()=>{
+    const s=Math.min(1,1200/img.width),c=document.createElement("canvas");
+    c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    photo=c.toDataURL("image/jpeg",.7);showPhoto();};
+    img.src=r.result;};
+  r.readAsDataURL(file);
+}
+
+async function save(){
+  const name=$("#name").value.trim();
+  if(!name){alert("Please enter the material name.");return;}
+  const e={id:cur?cur.id:Date.now(),name,category:$("#cat").value,amount:+$("#amt").value||0,
+    quantity:+$("#qty").value||1,unit:$("#unit").value,date:$("#date").value,
+    supplier:$("#sup").value.trim(),notes:$("#notes").value.trim(),color:$("#col").value.trim(),use:$("#use").value.trim(),project:$("#proj").value.trim(),photo};
+  const i=items.findIndex(x=>x.id===e.id);
+  if(i>=0) items[i]=e; else items.push(e);
+  await persist(()=>run("readwrite",s=>s.put(e)));
+  closeForm();render();
+}
+
+async function remove(){
+  if(!cur||!confirm("Delete this purchase and its photo?")) return;
+  items=items.filter(x=>x.id!==cur.id);
+  await persist(()=>run("readwrite",s=>s.delete(cur.id)));
+  closeForm();render();
+}
+
+$("#cat").innerHTML=CATS.map(c=>`<option>${esc(c)}</option>`).join("");
+$("#unit").innerHTML=UNITS.map(u=>`<option>${u}</option>`).join("");
+$("#add").onclick=()=>view==="projects"?openProj():view==="design"?openDes():openForm();
+$("#cancel").onclick=closeForm;
+$("#save").onclick=save;
+$("#del").onclick=remove;
+$("#q").oninput=render;
+$("#projView").onclick=e=>{const c=e.target.closest(".pc");if(c)openProj(c.dataset.n);};
+const pOpen=e=>{const r=e.target.closest(".mrow"),g=e.target.closest(".drow");if(r)openForm(items.find(x=>x.id===+r.dataset.id));else if(g)openDes(+g.dataset.id);};
+$("#psum").onclick=$("#ptop").onclick=pOpen;
+$("#pback").onclick=()=>$("#psheet").classList.remove("on");
+$("#psave").onclick=saveP;$("#pdel").onclick=delP;
+$("#padd").onclick=()=>openForm(null,{project:pcur.name});
+$("#pbud").oninput=refreshP;
+$("#desView").onclick=e=>{const c=e.target.closest(".dc");if(c)openDes(+c.dataset.id);};
+$("#dback").onclick=()=>{if(!dDirty||confirm("Discard your changes?"))$("#dsheet").classList.remove("on");};
+$("#dsave").onclick=saveD;$("#ddel").onclick=delD;
+$("#dsheet").oninput=()=>{dDirty=true;};
+$("#dsheet").onclick=e=>{
+  const a=e.target.closest("button[data-add]");
+  if(a){dTarget=a.dataset.add;$(a.dataset.m==="cam"?"#dfcam":"#dflib").click();return;}
+  const x=e.target.closest(".x");
+  if(x){dcur.imgs[x.dataset.k].splice(+x.dataset.i,1);renderGrid(x.dataset.k);dDirty=true;return;}
+  const im=e.target.closest(".ii img");
+  if(im){$("#lb img").src=im.src;$("#lb").classList.add("on");}
+};
+$("#lb").onclick=()=>$("#lb").classList.remove("on");
+$("#dfcam").onchange=$("#dflib").onchange=async e=>{
+  const fs=[...e.target.files],k=dTarget;e.target.value="";
+  for(const f of fs)await new Promise(r=>loadImg(f,d=>{dcur.imgs[k].push(d);r();},1200));
+  renderGrid(k);dDirty=true;
+};
+$("#dtype").onchange=()=>{dDirty=true;renderMeas();};
+$("#dunit").onchange=()=>{dDirty=true;renderMeas();};
+$("#dmin").addEventListener("input",e=>{const k=e.target.dataset.mk;if(!k)return;dcur.meas[k]=e.target.value;drawDiagram();});
+function bkStamp(){try{const t=localStorage.getItem("lastBackup");$("#bkl").textContent=t?"· last "+new Date(+t).toLocaleDateString("en-IN",{day:"numeric",month:"short"}):"";}catch(e){}}
+$("#bkgo").onclick=async()=>{
+  const data={app:"tailorspend",v:1,at:new Date().toISOString(),expenses:items,projects,designs};
+  const name="tailoring-backup-"+new Date().toISOString().slice(0,10)+".json";
+  const f=new File([JSON.stringify(data)],name,{type:"application/json"});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:"Tailoring backup"});
+    else{const a=document.createElement("a");a.href=URL.createObjectURL(f);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+    try{localStorage.setItem("lastBackup",Date.now());}catch(e){}bkStamp();
+  }catch(e){if(e&&e.name!=="AbortError")alert("Could not create the backup.");}
+};
+$("#bkrs").onclick=()=>$("#bkf").click();
+$("#bkf").onchange=async e=>{
+  const file=e.target.files[0];e.target.value="";if(!file)return;
+  try{
+    const d=JSON.parse(await file.text());
+    if(d.app!=="tailorspend")throw 0;
+    const ex=d.expenses||[],pr=d.projects||[],ds=d.designs||[];
+    if(!confirm(`Restore ${ex.length} purchases, ${pr.length} projects and ${ds.length} designs? Matching items will be overwritten; nothing else is deleted.`))return;
+    const merge=(arr,recs)=>recs.forEach(r=>{const i=arr.findIndex(x=>x.id===r.id);if(i>=0)arr[i]=r;else arr.push(r);});
+    merge(items,ex);merge(projects,pr);merge(designs,ds);
+    await persist(async()=>{for(const r of ex)await run("readwrite",s=>s.put(r));for(const r of pr)await run("readwrite",s=>s.put(r),"projects");for(const r of ds)await run("readwrite",s=>s.put(r),"designs");});
+    render();alert("Backup restored.");
+  }catch(err){alert("That file isn’t a valid Tailoring Expenses backup.");}
+};
+bkStamp();
+try{$("#sbUrl").value=localStorage.getItem("tailorspend_sb_url")||"https://akgfcdspcwsiqclzjjzg.supabase.co";$("#sbKey").value=localStorage.getItem("tailorspend_sb_key")||"sb_publishable_8wjUGhmK5bEegTa_mL4CuQ_GjI1MtDp";}catch(e){}
+$("#sbConnect").onclick=()=>sbAuth("signin");
+$("#sbSignup").onclick=()=>sbAuth("signup");
+$("#sbSync").onclick=()=>{if(!sb&&setupSupabase()){}syncCloud();};
+$("#sbLogout").onclick=async()=>{if(sb)await sb.auth.signOut();sbUser=null;cloudState();cloudMsg("Signed out. Your local data remains on this device.");};
+cloudState();
+  $("#pcam").onclick=()=>$("#pfcam").click();
+$("#plib").onclick=()=>$("#pflib").click();
+$("#pfcam").onchange=$("#pflib").onchange=e=>{loadImg(e.target.files[0],d=>{pphoto=d;showP();});e.target.value="";};
+$("#sort").onchange=$("#grp").onchange=$("#fprj").onchange=$("#fsup").onchange=$("#dfrom").onchange=$("#dto").onchange=render;
+$("#clr").onclick=()=>{$("#q").value="";fc="All";$("#sort").value="new";$("#fsup").value="";$("#fprj").value="";$("#grp").value="none";$("#dfrom").value=$("#dto").value="";render();};
+document.querySelector(".tabs").onclick=e=>{const b=e.target.closest(".tab");if(b){view=b.dataset.v;render();}};
+$("#sheetView").onclick=async e=>{
+  const b=e.target.closest("button[data-a]");if(!b)return;
+  if(b.dataset.a==="new"){
+    if($("#sheetView tr[data-new]") )return;
+    const today=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+    const td=(f,t,v,extra="")=>`<td><input data-f="${f}" type="${t}" value="${esc(v)}" ${extra}></td>`;
+    const sd=(f,opts)=>`<td><select data-f="${f}">${opts.map(o=>`<option>${esc(o)}</option>`).join("")}</select></td>`;
+    const row=`<tr data-new="1">${td("name","text","")}${sd("category",CATS)}${td("quantity","number","1",'step="any" min="0"')}${sd("unit",UNITS)}${td("ppu","number","0",'step="any" min="0"')}${td("amount","number","0",'step="any" min="0"')}${td("color","text","")}${td("supplier","text","")}${td("date","date",today)}${td("use","text","")}${td("project","text","",'list="projlist"')}${td("notes","text","")}<td><button class="mini" data-a="save-new">Save</button><button class="mini" data-a="cancel-new">Cancel</button></td></tr>`;
+    let body=$("#sheetView tbody");
+    if(!body){$("#sheetView").insertAdjacentHTML("beforeend",`<table><thead><tr><th>Material</th><th>Category</th><th>Qty</th><th>Unit</th><th>Per unit</th><th>Amount</th><th>Colour</th><th>Supplier</th><th>Date</th><th>Use</th><th>Project</th><th>Notes</th><th></th></tr></thead><tbody></tbody></table>`);body=$("#sheetView tbody");}
+    body.insertAdjacentHTML("beforeend",row);body.querySelector('[data-f="name"]')?.focus();return;
+  }
+  const tr=b.closest("tr");
+  if(b.dataset.a==="cancel-new"){tr.remove();return;}
+  if(b.dataset.a==="save-new"){
+    const addNext=tr.dataset.addNext==="1";
+    const v=f=>tr.querySelector(`[data-f="${f}"]`)?.value||"";
+    const name=v("name").trim();if(!name){alert("Please enter the material name.");tr.querySelector('[data-f="name"]')?.focus();return;}
+    const quantity=Math.max(0,+v("quantity")||0),ppu=Math.max(0,+v("ppu")||0),amount=Math.max(0,+v("amount")||0);
+    const rec={id:Date.now(),date:v("date")||new Date().toISOString().slice(0,10),name,category:v("category")||CATS[0],color:v("color").trim(),use:v("use").trim(),project:v("project").trim(),quantity:quantity||1,unit:v("unit")||UNITS[0],amount:amount||+(ppu*(quantity||1)).toFixed(2),supplier:v("supplier").trim(),notes:v("notes").trim(),photo:null};
+    items.push(rec);await persist(()=>run("readwrite",s=>s.put(rec)));render();
+    if(addNext){const addBtn=$("#sheetView [data-a='new']");if(addBtn){addBtn.click();setTimeout(()=>$("#sheetView tr[data-new] [data-f='name']")?.focus(),0);}}
+    return;
+  }
+  const x=items.find(i=>i.id===+tr?.dataset.id);if(!x)return;
+  if(b.dataset.a==="edit")openForm(x);
+  else if(b.dataset.a==="del"&&confirm("Delete this purchase and its photo?")){items=items.filter(i=>i.id!==x.id);await persist(()=>run("readwrite",s=>s.delete(x.id)));render();}
+};
+$("#sheetView").addEventListener("keydown",e=>{
+  if(e.key!=="Enter")return;
+  const tr=e.target.closest("tr[data-new]");if(!tr)return;
+  e.preventDefault();
+  tr.dataset.addNext="1";
+  tr.querySelector('[data-a="save-new"]')?.click();
+});
+$("#sheetView").oninput=e=>{
+  const tr=e.target.closest("tr[data-new]");if(!tr)return;
+  if(e.target.dataset.f==="quantity"||e.target.dataset.f==="ppu"){
+    const q=+(tr.querySelector('[data-f="quantity"]').value)||0,p=+(tr.querySelector('[data-f="ppu"]').value)||0;
+    tr.querySelector('[data-f="amount"]').value=+(q*p).toFixed(2);
+  }
+};
+$("#sheetView").onchange=async e=>{
+  const el=e.target,f=el.dataset.f,tr=el.closest("tr.d");if(!f||!tr)return;
+  const x=items.find(i=>i.id===+tr.dataset.id);if(!x)return;
+  const v=el.value;
+  if(f==="quantity"){const p=x.quantity>0?x.amount/x.quantity:0;x.quantity=Math.max(0,+v)||1;x.amount=+(p*x.quantity).toFixed(2);}
+  else if(f==="ppu"){x.amount=+((Math.max(0,+v)||0)*x.quantity).toFixed(2);}
+  else if(f==="amount"){x.amount=Math.max(0,+v)||0;}
+  else if(f==="name"){if(!v.trim()){el.value=x.name;return;}x.name=v.trim();}
+  else if(f==="date"){if(!v){el.value=x.date;return;}x.date=v;}
+  else x[f]=v.trim();
+  await persist(()=>run("readwrite",s=>s.put(x)));
+  if(f==="date"||f==="category"||f==="project"){render();return;}
+  const set=(k,val)=>{const c=tr.querySelector(`[data-f="${k}"]`);if(c)c.value=val;};
+  set("quantity",x.quantity);set("ppu",x.quantity>0?+(x.amount/x.quantity).toFixed(4):0);set("amount",x.amount);
+  updTotals();
+};
+$("#chips").onclick=e=>{const b=e.target.closest(".chip");if(b){fc=b.dataset.c;render();}};
+$("#amt").oninput=()=>{last="amt";calcBeads();ppu();};$("#ppg").oninput=()=>{last="ppg";calcBeads();ppu();};$("#qty").oninput=()=>{calcBeads();ppu();};$("#unit").onchange=ppu;
+$("#cat").onchange=()=>{if($("#cat").value==="Beads")$("#unit").value="grams";else if($("#unit").value==="grams")$("#unit").value=UNITS[0];beadsUI();calcBeads();ppu();};
+$("#cam").onclick=()=>$("#fcam").click();
+$("#lib").onclick=()=>$("#flib").click();
+$("#fcam").onchange=e=>{loadPhoto(e.target.files[0]);e.target.value="";};
+$("#flib").onchange=e=>{loadPhoto(e.target.files[0]);e.target.value="";};
+$("#list").onclick=e=>{const r=e.target.closest(".row");if(r)openForm(items.find(x=>x.id===+r.dataset.id));};
+
+(async()=>{
+  try{db=await openDB();items=await run("readonly",s=>s.getAll())||[];projects=await run("readonly",s=>s.getAll(),"projects")||[];designs=await run("readonly",s=>s.getAll(),"designs")||[];
+    for(const x of items){if(!CATS.includes(x.category)){x.category=x.category==="Laces"?"Lace & Trims":"Other";await run("readwrite",s=>s.put(x));}}}
+  catch(e){db=null;alert("Saving isn’t available in this browser, so purchases will be lost when you close the page.");}
+  render();
+})();
+</script>
+</body>
+</html>
